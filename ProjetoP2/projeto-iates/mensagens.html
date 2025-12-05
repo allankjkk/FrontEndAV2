@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Luxo - Mensagens</title>
+    <link rel="shortcut icon" href="images/barco2.png" type="image/x-icon" />
+    <link rel="stylesheet" href="css/default.css" />
+    <style>
+        .table-container {
+            margin-top: 20px;
+            overflow-x: auto;
+            background-color: white;
+            padding: 10px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            /* Ensures columns respect widths */
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px 10px;
+            text-align: left;
+            overflow-wrap: break-word;
+            /* Wraps long text */
+            word-wrap: break-word;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: #21272b;
+            /* Matches darkblue theme */
+            color: white;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        /* Definição de largura das colunas */
+        th:nth-child(1) {
+            width: 15%;
+        }
+
+        /* Nome */
+        th:nth-child(2) {
+            width: 25%;
+        }
+
+        /* Email */
+        th:nth-child(3) {
+            width: 40%;
+        }
+
+        /* Mensagem */
+        th:nth-child(4) {
+            width: 20%;
+        }
+
+        /* Ações */
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .unread {
+            font-weight: bold;
+            color: #000;
+        }
+
+        /* Botões de Ação */
+        .action-btn {
+            display: block;
+            width: 100%;
+            margin-bottom: 5px;
+            font-size: 0.75em;
+            padding: 8px;
+            cursor: pointer;
+            border: none;
+            color: white;
+            text-transform: uppercase;
+            transition: 0.3s;
+            text-align: center;
+        }
+
+        /* Cores específicas para botões */
+        .btn-view {
+            background-color: #1bb4e8;
+            /* lightblue */
+        }
+
+        .btn-view:hover {
+            background-color: #159bc5;
+        }
+
+        .btn-delete {
+            background-color: #c6b07f;
+            /* ocher */
+        }
+
+        .btn-delete:hover {
+            background-color: #a89467;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <header>
+            <div id="title">
+                <img src="images/barco1.png" alt="ícone de barco" />
+                <div class="headtitle">
+                    <h1>Luxo</h1>
+                    <h2>Aluguel de iates</h2>
+                </div>
+            </div>
+
+            <nav>
+                <ul class="navmenu">
+                    <li><a href="index.html">Página inicial</a></li>
+                    <li><a href="aluguel.html">Aluguel de iates</a></li>
+                    <li><a href="destinos.html">Destinos</a></li>
+                    <li><a href="tripulacao.html">Tripulação</a></li>
+                    <li><a href="contato.html">Contato</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <div class="pagtitle">
+                <div class="bgtitle"></div>
+                <h2>Mensagens Recebidas</h2>
+            </div>
+
+            <div class="table-container">
+                <table id="tabela-mensagens">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>E-mail</th>
+                            <th>Mensagem</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Mensagens serão inseridas aqui -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts importados -->
+    <script src="js/jquery-3.6.4.min.js"></script>
+    <script src="js/api.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Function to generate a simple hash/ID for a message
+            function generateId(msg) {
+                return btoa(unescape(encodeURIComponent(msg.nome + msg.email + msg.mensagem))).replace(/=/g, '');
+            }
+
+            // Load messages from LocalStorage
+            var localMessages = JSON.parse(localStorage.getItem('messages') || '[]');
+
+            // Function to render messages
+            function renderMessages() {
+                var tbody = $('#tabela-mensagens tbody');
+                tbody.empty();
+
+                localMessages.forEach(function (msg) {
+                    var row = $('<tr>');
+                    if (!msg.read) {
+                        row.addClass('unread');
+                    }
+
+                    row.append($('<td>').text(msg.nome));
+                    row.append($('<td>').text(msg.email));
+                    row.append($('<td>').text(msg.mensagem));
+
+                    var actions = $('<td>');
+
+                    var btnVisualizada = $('<button>').text('Visualizada').addClass('button action-btn btn-view');
+                    btnVisualizada.attr('title', 'Marcar como visualizada');
+                    btnVisualizada.click(function () {
+                        if (confirm('Marcar como visualizada?')) {
+                            msg.read = true;
+                            saveMessages();
+                            renderMessages();
+                        }
+                    });
+
+                    var btnExcluir = $('<button>').text('Excluir').addClass('button action-btn btn-delete');
+                    btnExcluir.attr('title', 'Excluir mensagem');
+                    btnExcluir.click(function () {
+                        if (confirm('Excluir mensagem permanentemente?')) {
+                            localMessages = localMessages.filter(function (m) { return m.id !== msg.id; });
+                            saveMessages();
+                            renderMessages();
+                        }
+                    });
+
+                    actions.append(btnVisualizada);
+                    actions.append(btnExcluir);
+                    row.append(actions);
+
+                    tbody.append(row);
+                });
+            }
+
+            function saveMessages() {
+                localStorage.setItem('messages', JSON.stringify(localMessages));
+            }
+
+            // Sync with API
+            try {
+                var apiMessages = obterMensagens();
+                if (apiMessages && Array.isArray(apiMessages)) {
+                    var newMessagesCount = 0;
+                    apiMessages.forEach(function (apiMsg) {
+                        var id = generateId(apiMsg);
+                        // Check if exists
+                        var exists = localMessages.some(function (localMsg) { return localMsg.id === id; });
+
+                        if (!exists) {
+                            localMessages.push({
+                                id: id,
+                                nome: apiMsg.nome,
+                                email: apiMsg.email,
+                                mensagem: apiMsg.mensagem,
+                                read: false
+                            });
+                            newMessagesCount++;
+                        }
+                    });
+
+                    if (newMessagesCount > 0) {
+                        saveMessages();
+                    }
+                }
+            } catch (e) {
+                console.error("Erro ao obter mensagens da API", e);
+            }
+
+            // Initial render
+            renderMessages();
+        });
+    </script>
+
+    <footer>
+        <p>© 2023 por Luxo aluguel de iates</p>
+    </footer>
+</body>
+
+</html>
